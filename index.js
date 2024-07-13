@@ -30,6 +30,7 @@ async function run() {
         // await client.connect();
 
         const usersCollection = client.db('brandTec').collection('users')
+        const productsCollection = client.db('brandTec').collection('products')
 
 
 
@@ -83,6 +84,19 @@ async function run() {
                 }
             }
             const result = await usersCollection.updateOne(filter, updateDoc)
+            res.send(result)
+        })
+
+        // product post 
+        app.post('/products', async (req, res)=>{
+            const data = req.body 
+            const result = await productsCollection.insertOne(data)
+            res.send(result)
+        })
+         
+        // product get 
+        app.get('/products', async (req, res) =>{
+            const result = await productsCollection.find().toArray()
             res.send(result)
         })
 
