@@ -88,15 +88,30 @@ async function run() {
         })
 
         // product post 
-        app.post('/products', async (req, res)=>{
-            const data = req.body 
+        app.post('/products', async (req, res) => {
+            const data = req.body
             const result = await productsCollection.insertOne(data)
             res.send(result)
         })
-         
+
         // product get 
-        app.get('/products', async (req, res) =>{
+        app.get('/products', async (req, res) => {
             const result = await productsCollection.find().toArray()
+            res.send(result)
+        })
+
+        //product get by id
+        app.get('/products/:id', async (req, res) => {
+            const id = req.params.id
+            const query = { _id: new ObjectId(id) }
+            const result = await productsCollection.findOne(query)
+            res.send(result)
+        })
+        //product get by brand
+        app.get('/products/br/:brand', async (req, res) => {
+            const brand = req.params.brand
+            const query = { productBrand: brand}
+            const result = await productsCollection.find(query).toArray()
             res.send(result)
         })
 
