@@ -107,13 +107,44 @@ async function run() {
             const result = await productsCollection.findOne(query)
             res.send(result)
         })
+
         //product get by brand
         app.get('/products/br/:brand', async (req, res) => {
             const brand = req.params.brand
-            const query = { productBrand: brand}
+            const query = { productBrand: brand }
             const result = await productsCollection.find(query).toArray()
             res.send(result)
         })
+
+        //product delete by id
+        app.delete('/products/:id', async (req, res) => {
+            const id = req.params.id
+            const query = { _id: new ObjectId(id) }
+            const result = await productsCollection.deleteOne(query)
+            res.send(result)
+        })
+
+        // product update by id 
+        app.patch('/products/:id', async (req, res) => {
+            const id = req.params.id
+            const data = req.body
+            const filter = { _id: new ObjectId(id) }
+            const updatedDoc = {
+                $set: {
+                    productName:data.productName,
+                    productBrand:data.productBrand,
+                    oldPrice:data.oldPrice,
+                    newPrice:data.newPrice,
+                    productQuantity:data.productQuantity,
+                    productImage:data.productImage,
+                    productDetails:data.productDetails,
+                    productType:data.productType,
+                    productAddDate:data.productAddDate
+                }
+            }
+            const result = await productsCollection.updateOne(filter, updatedDoc)
+            res.send(result)
+         })
 
 
 
