@@ -70,7 +70,6 @@ async function run() {
         })
 
         // update user data by id 
-        
         app.patch('/users/user/:id', async (req, res) => {
             const id = req.params.id
             const currentUser = req.body
