@@ -31,6 +31,7 @@ async function run() {
 
         const usersCollection = client.db('brandTec').collection('users')
         const productsCollection = client.db('brandTec').collection('products')
+        const cartsCollection = client.db('brandTec').collection('carts')
 
 
 
@@ -145,6 +146,19 @@ async function run() {
             const result = await productsCollection.updateOne(filter, updatedDoc)
             res.send(result)
          })
+
+        //  post cart 
+        app.post('/carts', async (req, res)=>{
+            const data = req.body 
+            const result = await cartsCollection.insertOne(data)
+            res.send(result)
+        })
+
+        // get carts 
+        app.get('/carts', async(req, res)=>{
+            const result = await cartsCollection.find().toArray()
+            res.send(result)
+        })
 
 
 
