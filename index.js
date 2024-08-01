@@ -101,6 +101,21 @@ async function run() {
             res.send(result)
         })
 
+        // product get allProduct route
+        app.get('/products/product', async (req, res) => {
+            console.log(req.query)
+            const page = parseInt(req.query.page)
+            const size = parseInt(req.query.size)
+            const result = await productsCollection.find().skip(page * size).limit(size).toArray()
+            res.send(result)
+        })
+
+        //  product count 
+        app.get('/productsCount', async (req, res) => {
+            const count = await productsCollection.estimatedDocumentCount()
+            res.send({ count })
+        })
+
         //product get by id
         app.get('/products/:id', async (req, res) => {
             const id = req.params.id
@@ -117,6 +132,21 @@ async function run() {
             res.send(result)
         })
 
+        //stock product get 
+        app.get('/products/st/stock', async (req, res) => {
+            const query = { productQuantity: { $gt: 0 } };  
+            const result = await productsCollection.find(query).toArray();
+            res.send(result);
+        })
+
+        //stockOut product get 
+        app.get('/products/st/stockOut', async (req, res) => {
+            const query = { productQuantity: { $lt: 1 } }; 
+            const result = await productsCollection.find(query).toArray();
+            res.send(result);
+        });
+        
+
         //product delete by id
         app.delete('/products/:id', async (req, res) => {
             const id = req.params.id
@@ -132,54 +162,56 @@ async function run() {
             const filter = { _id: new ObjectId(id) }
             const updatedDoc = {
                 $set: {
-                    productName:data.productName,
-                    productBrand:data.productBrand,
-                    oldPrice:data.oldPrice,
-                    newPrice:data.newPrice,
-                    productQuantity:data.productQuantity,
-                    productImage:data.productImage,
-                    productDetails:data.productDetails,
-                    productType:data.productType,
-                    productAddDate:data.productAddDate
+                    productName: data.productName,
+                    productBrand: data.productBrand,
+                    oldPrice: data.oldPrice,
+                    newPrice: data.newPrice,
+                    productQuantity: data.productQuantity,
+                    productImage: data.productImage,
+                    productDetails: data.productDetails,
+                    productType: data.productType,
+                    productAddDate: data.productAddDate
                 }
             }
             const result = await productsCollection.updateOne(filter, updatedDoc)
             res.send(result)
-         })
+        })
+
+        
 
         //  post cart 
-        app.post('/carts', async (req, res)=>{
-            const data = req.body 
+        app.post('/carts', async (req, res) => {
+            const data = req.body
             const result = await cartsCollection.insertOne(data)
             res.send(result)
         })
 
         // get carts 
-        app.get('/carts', async(req, res)=>{
+        app.get('/carts', async (req, res) => {
             const result = await cartsCollection.find().toArray()
             res.send(result)
         })
 
         // get carts items by email 
-        app.get('/carts/:email', async(req, res) =>{
-            const email = req.params.email 
-            const query = {email : email}
+        app.get('/carts/:email', async (req, res) => {
+            const email = req.params.email
+            const query = { email: email }
             const result = await cartsCollection.find(query).toArray()
             res.send(result)
         })
 
         // get carts items by id 
-        app.get('/carts/id/:id', async(req, res) =>{
-            const id = req.params.id 
-            const query = {_id : new ObjectId(id)}
-            const result = await cartsCollection.findOne(query) 
+        app.get('/carts/id/:id', async (req, res) => {
+            const id = req.params.id
+            const query = { _id: new ObjectId(id) }
+            const result = await cartsCollection.findOne(query)
             res.send(result)
         })
 
         // delete cart by id 
-        app.delete('/carts/:id', async (req, res) =>{
-            const id = req.params.id 
-            const query = {_id : new ObjectId(id)}
+        app.delete('/carts/:id', async (req, res) => {
+            const id = req.params.id
+            const query = { _id: new ObjectId(id) }
             const result = await cartsCollection.deleteOne(query)
             res.send(result)
         })
