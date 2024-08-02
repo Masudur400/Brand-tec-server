@@ -101,9 +101,8 @@ async function run() {
             res.send(result)
         })
 
-        // product get allProduct route
-        app.get('/products/product', async (req, res) => {
-            console.log(req.query)
+        // product get for pagination
+        app.get('/products/product', async (req, res) => { 
             const page = parseInt(req.query.page)
             const size = parseInt(req.query.size)
             const result = await productsCollection.find().skip(page * size).limit(size).toArray()
@@ -134,15 +133,19 @@ async function run() {
 
         //stock product get 
         app.get('/products/st/stock', async (req, res) => {
+            const page = parseInt(req.query.page)
+            const size = parseInt(req.query.size)
             const query = { productQuantity: { $gt: 0 } };  
-            const result = await productsCollection.find(query).toArray();
+            const result = await productsCollection.find(query).skip(page * size).limit(size).toArray();
             res.send(result);
         })
 
         //stockOut product get 
         app.get('/products/st/stockOut', async (req, res) => {
+            const page = parseInt(req.query.page)
+            const size = parseInt(req.query.size)
             const query = { productQuantity: { $lt: 1 } }; 
-            const result = await productsCollection.find(query).toArray();
+            const result = await productsCollection.find(query).skip(page * size).limit(size).toArray();
             res.send(result);
         });
         
