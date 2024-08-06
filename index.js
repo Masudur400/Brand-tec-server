@@ -95,13 +95,19 @@ async function run() {
             res.send(result)
         })
 
-        // product get 
+        // all product get for search #rout: watch, mobile, laptop
         app.get('/products', async (req, res) => {
-            const result = await productsCollection.find().toArray()
+            const filter = req.query
+            console.log(filter)
+            const query = {productName : {
+                $regex:filter.search,
+                $options:'i'
+            }}
+            const result = await productsCollection.find(query).toArray()
             res.send(result)
         })
 
-        // product get for pagination
+        // all product get for pagination #rout: allProduct
         app.get('/products/product', async (req, res) => { 
             const page = parseInt(req.query.page)
             const size = parseInt(req.query.size)
