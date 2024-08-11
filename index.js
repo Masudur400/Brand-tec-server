@@ -93,10 +93,15 @@ async function run() {
             res.send(result)
         })
 
+        // all product get 
+        app.get('/products', async (req, res)=>{
+            const result = await productsCollection.find().toArray()
+            res.send(result)
+        })
+
         // all product get for search #rout: watch, mobile, laptop
-        app.get('/products', async (req, res) => {
-            const filter = req.query
-            console.log(filter)
+        app.get('/products/pp', async (req, res) => {
+            const filter = req.query 
             const query = {
                 productName: {
                     $regex: filter.search,
