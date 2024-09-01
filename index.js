@@ -29,6 +29,7 @@ async function run() {
 
         const usersCollection = client.db('brandTec').collection('users')
         const productsCollection = client.db('brandTec').collection('products')
+        const shippingsCollection = client.db('brandTec').collection('shippings')
         const cartsCollection = client.db('brandTec').collection('carts')
 
 
@@ -82,6 +83,19 @@ async function run() {
                 }
             }
             const result = await usersCollection.updateOne(filter, updateDoc)
+            res.send(result)
+        })
+
+        // post shippings Method 
+        app.post('/shippings', async(req, res)=>{
+            const data = req.body 
+            const result = await shippingsCollection.insertOne(data)
+            res.send(result)
+        })
+
+        // get shipping method 
+        app.get('/shippings', async(req, res) =>{
+            const result = await shippingsCollection.find().toArray()
             res.send(result)
         })
 
