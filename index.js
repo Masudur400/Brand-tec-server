@@ -99,6 +99,22 @@ async function run() {
             res.send(result)
         })
 
+        // get shippings method by id 
+        app.get('/shippings/:id', async(req, res)=>{
+            const id = req.params.id
+            const query = {_id: new ObjectId(id)}
+            const result = await shippingsCollection.findOne(query)
+            res.send(result)
+        })
+
+        // delete shippings method by id 
+        app.delete('/shippings/:id', async(req, res)=>{
+            const id = req.params.id 
+            const query = {_id: new ObjectId(id)}
+            const result = await shippingsCollection.deleteOne(query)
+            res.send(result)
+        })
+
         // product post 
         app.post('/products', async (req, res) => {
             const data = req.body
