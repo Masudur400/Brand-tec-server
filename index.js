@@ -1,8 +1,10 @@
 const express = require('express');
 const cors = require('cors');
-const app = express()
+const app = express() 
 require('dotenv').config()
+const SSLCommerzPayment = require('sslcommerz-lts') 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const { default: axios } = require('axios');
 const port = process.env.PORT || 5000
 
 
@@ -21,6 +23,11 @@ const client = new MongoClient(uri, {
         deprecationErrors: true,
     }
 });
+
+// SSLCommerz secret 
+const store_id = process.env.store_id
+const store_passwd = process.env.store_passwd
+const is_live = false //true for live, false for sandbox
 
 async function run() {
     try {
@@ -257,6 +264,55 @@ async function run() {
             const query = { _id: new ObjectId(id) }
             const result = await cartsCollection.deleteOne(query)
             res.send(result)
+        })
+
+        // order post 
+         app.post('/order', async (req, res)=>{
+            const body = req.body 
+            const products = await cartsCollection.find({email : body?.email}).toArray()
+            const price = products.map(product =>product?.newPrice)
+            const totalPrice = price?.reduce((sum, price) => sum + price, 0)
+            const amount = parseInt(totalPrice + body?.shippingMethod)
+            const tranId = new ObjectId().toString()
+
+            const data = {
+                total_amount: amount,
+                currency: body?.currency,
+                tran_id: tranId,  
+                success_url: 'http://localhost:3030/success',
+                fail_url: 'http://localhost:3030/fail',
+                cancel_url: 'http://localhost:3030/cancel',
+                ipn_url: 'http://localhost:3030/ipn',
+                shipping_method: 'Courier',
+                product_name: 'Computer.',
+                product_category: 'Electronic',
+                product_profile: 'general',
+                cus_name: body.name,
+                cus_email: body.email, 
+                cus_postcode: '1000', 
+                cus_country: 'Bangladesh',
+                cus_phone: body.phone,
+                // cus_fax: '01711111111',
+                ship_name: body.name,
+                ship_add1: body.shippingArea,
+                // ship_add2: 'Dhaka',
+                ship_city: 'Dhaka',
+                // ship_state: 'Dhaka',
+                cus_add1: body.address,
+                // cus_add2: 'Dhaka',
+                // cus_city: 'Dhaka',
+                // cus_state: 'Dhaka',
+                ship_postcode: 1000,
+                ship_country: 'Bangladesh',
+            };
+              
+            const sslcz = new SSLCommerzPayment(store_id, store_passwd, is_live)
+            sslcz.init(data).then(apiResponse => {
+                // Redirect the user to payment gateway
+                let GatewayPageURL = apiResponse?.GatewayPageURL
+                res.send({url: GatewayPageURL})
+                console.log('Redirecting to: ', GatewayPageURL)
+            }); 
         })
 
 
