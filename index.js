@@ -1,10 +1,9 @@
 const express = require('express');
 const cors = require('cors');
-const app = express() 
+const app = express()
 require('dotenv').config()
-const SSLCommerzPayment = require('sslcommerz-lts') 
+const SSLCommerzPayment = require('sslcommerz-lts')
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-const { default: axios } = require('axios');
 const port = process.env.PORT || 5000
 
 
@@ -38,6 +37,7 @@ async function run() {
         const productsCollection = client.db('brandTec').collection('products')
         const shippingsCollection = client.db('brandTec').collection('shippings')
         const cartsCollection = client.db('brandTec').collection('carts')
+        const ordersCollection = client.db('brandTec').collection('orders')
 
 
 
@@ -61,7 +61,7 @@ async function run() {
 
         // user get by email 
         app.get('/users/:email', async (req, res) => {
-            const email = req.params.email 
+            const email = req.params.email
             const query = { email: email }
             const result = await usersCollection.findOne(query)
             res.send(result)
@@ -94,30 +94,30 @@ async function run() {
         })
 
         // post shippings Method 
-        app.post('/shippings', async(req, res)=>{
-            const data = req.body 
+        app.post('/shippings', async (req, res) => {
+            const data = req.body
             const result = await shippingsCollection.insertOne(data)
             res.send(result)
         })
 
         // get shipping method 
-        app.get('/shippings', async(req, res) =>{
+        app.get('/shippings', async (req, res) => {
             const result = await shippingsCollection.find().toArray()
             res.send(result)
         })
 
         // get shippings method by id 
-        app.get('/shippings/:id', async(req, res)=>{
+        app.get('/shippings/:id', async (req, res) => {
             const id = req.params.id
-            const query = {_id: new ObjectId(id)}
+            const query = { _id: new ObjectId(id) }
             const result = await shippingsCollection.findOne(query)
             res.send(result)
         })
 
         // delete shippings method by id 
-        app.delete('/shippings/:id', async(req, res)=>{
-            const id = req.params.id 
-            const query = {_id: new ObjectId(id)}
+        app.delete('/shippings/:id', async (req, res) => {
+            const id = req.params.id
+            const query = { _id: new ObjectId(id) }
             const result = await shippingsCollection.deleteOne(query)
             res.send(result)
         })
@@ -130,14 +130,14 @@ async function run() {
         })
 
         // all product get 
-        app.get('/products', async (req, res)=>{
+        app.get('/products', async (req, res) => {
             const result = await productsCollection.find().toArray()
             res.send(result)
         })
 
         // all product get for search #rout: watch, mobile, laptop
         app.get('/products/pp', async (req, res) => {
-            const filter = req.query 
+            const filter = req.query
             const query = {
                 productName: {
                     $regex: filter.search,
@@ -267,10 +267,10 @@ async function run() {
         })
 
         // order post 
-         app.post('/order', async (req, res)=>{
-            const body = req.body 
-            const products = await cartsCollection.find({email : body?.email}).toArray()
-            const price = products.map(product =>product?.newPrice)
+        app.post('/orders', async (req, res) => {
+            const body = req.body
+            const products = await cartsCollection.find({ email: body?.email }).toArray()
+            const price = products.map(product => product?.newPrice)
             const totalPrice = price?.reduce((sum, price) => sum + price, 0)
             const amount = parseInt(totalPrice + body?.shippingMethod)
             const tranId = new ObjectId().toString()
@@ -278,9 +278,9 @@ async function run() {
             const data = {
                 total_amount: amount,
                 currency: body?.currency,
-                tran_id: tranId,  
-                success_url: 'http://localhost:3030/success',
-                fail_url: 'http://localhost:3030/fail',
+                tran_id: tranId,
+                success_url: `http://localhost:5000/payment/success/${tranId}`,
+                fail_url: `http://localhost:5000/payment/fail/${tranId}`,
                 cancel_url: 'http://localhost:3030/cancel',
                 ipn_url: 'http://localhost:3030/ipn',
                 shipping_method: 'Courier',
@@ -288,15 +288,15 @@ async function run() {
                 product_category: 'Electronic',
                 product_profile: 'general',
                 cus_name: body.name,
-                cus_email: body.email, 
-                cus_postcode: '1000', 
+                cus_email: body.email,
+                cus_postcode: '1000',
                 cus_country: 'Bangladesh',
                 cus_phone: body.phone,
                 // cus_fax: '01711111111',
                 ship_name: body.name,
                 ship_add1: body.shippingArea,
                 // ship_add2: 'Dhaka',
-                ship_city: 'Dhaka',
+                ship_city: body.shippingArea,
                 // ship_state: 'Dhaka',
                 cus_add1: body.address,
                 // cus_add2: 'Dhaka',
@@ -305,17 +305,72 @@ async function run() {
                 ship_postcode: 1000,
                 ship_country: 'Bangladesh',
             };
-              
+
             const sslcz = new SSLCommerzPayment(store_id, store_passwd, is_live)
             sslcz.init(data).then(apiResponse => {
                 // Redirect the user to payment gateway
                 let GatewayPageURL = apiResponse?.GatewayPageURL
-                res.send({url: GatewayPageURL})
-                console.log('Redirecting to: ', GatewayPageURL)
-            }); 
+                res.send({ url: GatewayPageURL })
+
+                // order send database
+                const orderData = {
+                    data: body,
+                    paidStatus: false,
+                     status : 'pending',
+                    transactionId: tranId
+                }
+                const result = ordersCollection.insertOne(orderData)
+
+                // console.log('Redirecting to: ', GatewayPageURL)
+            });
+
+            // paid status update when payment success
+            app.post('/payment/success/:tranId', async (req, res) => {
+                const tranId = req.params.tranId
+
+                const result = await ordersCollection.updateOne({ transactionId: tranId }, {
+                    $set: {
+                        paidStatus: true
+                    }
+                })
+                if (result.modifiedCount > 0) {
+                    const order = await ordersCollection.findOne({ transactionId: tranId });
+                    if (order && order?.data?.productsIds) {
+                        // Delete items from the cart collection
+                        const query = { 
+                            _id: { 
+                                $in: order?.data?.productsIds.map(id => new ObjectId(id))  
+                            }};
+                        await cartsCollection.deleteMany(query);
+                    }
+                    res.redirect(`http://localhost:5173/payment/success/${tranId}`)
+                }
+            })
+
+            // order delete when payment faile 
+            app.post('/payment/fail/:tranId', async (req, res) => {
+                const tranId = req.params.tranId
+                const result = await ordersCollection.deleteOne({ transactionId: tranId })
+                if (result.deletedCount) {
+                    res.redirect(`http://localhost:5173/payment/fail/${tranId}`)
+                } 
+            })
+
+
+        }) 
+
+        // get all orders 
+        app.get('/orders', async (req, res) => {
+            const result = await ordersCollection.find().toArray()
+            res.send(result)
         })
 
-
+        // get orders by transactionId 
+        app.get('/orders/or/:tranId', async (req, res)=>{
+            const tranId = req.params.tranId  
+            const result = await ordersCollection.find({ transactionId: tranId }).toArray()
+            res.send(result)
+        })
 
         // Send a ping to confirm a successful connection
         // await client.db("admin").command({ ping: 1 });
