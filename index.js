@@ -38,6 +38,7 @@ async function run() {
         const shippingsCollection = client.db('brandTec').collection('shippings')
         const cartsCollection = client.db('brandTec').collection('carts')
         const ordersCollection = client.db('brandTec').collection('orders')
+        const reviewsCollection = client.db('brandTec').collection('reviews')
 
 
 
@@ -90,6 +91,19 @@ async function run() {
                 }
             }
             const result = await usersCollection.updateOne(filter, updateDoc)
+            res.send(result)
+        })
+
+        // post review 
+        app.post('/reviews', async (req, res) => {
+            const data = req.body
+            const result = await reviewsCollection.insertOne(data)
+            res.send(result)
+        })
+
+        // get reviews 
+        app.get('/reviews', async (req, res)=>{
+            const result = await reviewsCollection.find().toArray()
             res.send(result)
         })
 
@@ -316,7 +330,7 @@ async function run() {
                 const orderData = {
                     data: body,
                     paidStatus: false,
-                     status : 'pending',
+                    status: 'pending',
                     transactionId: tranId
                 }
                 const result = ordersCollection.insertOne(orderData)
@@ -337,10 +351,11 @@ async function run() {
                     const order = await ordersCollection.findOne({ transactionId: tranId });
                     if (order && order?.data?.productsIds) {
                         // Delete items from the cart collection
-                        const query = { 
-                            _id: { 
-                                $in: order?.data?.productsIds.map(id => new ObjectId(id))  
-                            }};
+                        const query = {
+                            _id: {
+                                $in: order?.data?.productsIds.map(id => new ObjectId(id))
+                            }
+                        };
                         await cartsCollection.deleteMany(query);
                     }
                     res.redirect(`http://localhost:5173/payment/success/${tranId}`)
@@ -353,11 +368,11 @@ async function run() {
                 const result = await ordersCollection.deleteOne({ transactionId: tranId })
                 if (result.deletedCount) {
                     res.redirect(`http://localhost:5173/payment/fail/${tranId}`)
-                } 
+                }
             })
 
 
-        }) 
+        })
 
         // get all orders 
         app.get('/orders', async (req, res) => {
@@ -366,8 +381,8 @@ async function run() {
         })
 
         // get orders by transactionId 
-        app.get('/orders/or/:tranId', async (req, res)=>{
-            const tranId = req.params.tranId  
+        app.get('/orders/or/:tranId', async (req, res) => {
+            const tranId = req.params.tranId
             const result = await ordersCollection.find({ transactionId: tranId }).toArray()
             res.send(result)
         })
