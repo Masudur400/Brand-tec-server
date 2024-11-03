@@ -39,6 +39,7 @@ async function run() {
         const cartsCollection = client.db('brandTec').collection('carts')
         const ordersCollection = client.db('brandTec').collection('orders')
         const reviewsCollection = client.db('brandTec').collection('reviews')
+        const productReviewsCollection = client.db('brandTec').collection('productReviews')
 
 
 
@@ -104,6 +105,27 @@ async function run() {
         // get reviews 
         app.get('/reviews', async (req, res)=>{
             const result = await reviewsCollection.find().toArray()
+            res.send(result)
+        })
+
+        // post product review 
+        app.post('/productReviews', async(req, res)=>{
+            const data = req.body 
+            const result = await productReviewsCollection.insertOne(data)
+            res.send(result)
+        })
+
+        // get product review 
+        app.get('/productReviews', async (req, res)=>{
+            const result = await productReviewsCollection.find().toArray()
+            res.send(result)
+        })
+
+        // get product reviews by prodId 
+        app.get('/productReviews/:prodId', async (req, res) =>{
+            const prodId = req.params.prodId 
+            const query = {prodId : prodId}
+            const result = await productReviewsCollection.find(query).toArray()
             res.send(result)
         })
 
