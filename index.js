@@ -108,6 +108,22 @@ async function run() {
             res.send(result)
         })
 
+        // get review by id  
+        app.get('/reviews', async (req, res)=>{
+            const id = req.params.id 
+            const query = {_id : new ObjectId(id)}
+            const result = await reviewsCollection.findOne(query)
+            res.send(result)
+        })
+
+        // delete review by id 
+        app.delete('/reviews/:id', async(req, res)=>{
+            const id = req.params.id 
+            const query = {_id : new ObjectId(id)}
+            const result = await reviewsCollection.deleteOne(query)
+            res.send(result)
+        })
+
         // post product review 
         app.post('/productReviews', async(req, res)=>{
             const data = req.body 
@@ -126,6 +142,14 @@ async function run() {
             const prodId = req.params.prodId 
             const query = {prodId : prodId}
             const result = await productReviewsCollection.find(query).toArray()
+            res.send(result)
+        })
+
+        // delete product review 
+        app.delete('/productReviews/:id', async(req, res)=>{
+            const id = req.params.id 
+            const query = {_id : new ObjectId(id)}
+            const result = await productReviewsCollection.deleteOne(query)
             res.send(result)
         })
 
