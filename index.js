@@ -216,6 +216,21 @@ async function run() {
             res.send(result)
         })
 
+        // all products get for pagination and search 
+        app.get('/products/all', async (req, res)=>{
+            const filter = req.query
+            const query = {
+                productName: {
+                    $regex: filter.search,
+                    $options: 'i'
+                }
+            }
+            const page = parseInt(req.query.page)
+            const size = parseInt(req.query.size)
+            const result = await productsCollection.find(query).skip(page * size).limit(size).toArray()
+            res.send(result)
+        })
+
         //  product count 
         app.get('/productsCount', async (req, res) => {
             const count = await productsCollection.estimatedDocumentCount()
