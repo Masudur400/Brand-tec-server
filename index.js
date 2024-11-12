@@ -4,7 +4,7 @@ const app = express()
 require('dotenv').config()
 const SSLCommerzPayment = require('sslcommerz-lts')
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-const port = process.env.PORT || 5000
+const port = process.env.PORT || 5000 
 
 
 // middleware
@@ -41,6 +41,8 @@ async function run() {
         const reviewsCollection = client.db('brandTec').collection('reviews')
         const productReviewsCollection = client.db('brandTec').collection('productReviews')
 
+
+        
 
 
         // users post 
@@ -88,7 +90,9 @@ async function run() {
                     photo: currentUser.photo,
                     email: currentUser.email,
                     role: currentUser.role,
-                    userCreateTime: currentUser.userCreateTime
+                    userCreateTime: currentUser.userCreateTime,
+                    phone: currentUser.phone,
+                    userLocation: currentUser.userLocation
                 }
             }
             const result = await usersCollection.updateOne(filter, updateDoc)
