@@ -4,7 +4,7 @@ const app = express()
 require('dotenv').config()
 const SSLCommerzPayment = require('sslcommerz-lts')
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-const port = process.env.PORT || 5000 
+const port = process.env.PORT || 5000
 
 
 // middleware
@@ -38,11 +38,12 @@ async function run() {
         const shippingsCollection = client.db('brandTec').collection('shippings')
         const cartsCollection = client.db('brandTec').collection('carts')
         const ordersCollection = client.db('brandTec').collection('orders')
+        const completeOrdersCollection = client.db('brandTec').collection('completeOrders')
         const reviewsCollection = client.db('brandTec').collection('reviews')
         const productReviewsCollection = client.db('brandTec').collection('productReviews')
 
 
-        
+
 
 
         // users post 
@@ -107,52 +108,52 @@ async function run() {
         })
 
         // get reviews 
-        app.get('/reviews', async (req, res)=>{
+        app.get('/reviews', async (req, res) => {
             const result = await reviewsCollection.find().toArray()
             res.send(result)
         })
 
         // get review by id  
-        app.get('/reviews', async (req, res)=>{
-            const id = req.params.id 
-            const query = {_id : new ObjectId(id)}
+        app.get('/reviews', async (req, res) => {
+            const id = req.params.id
+            const query = { _id: new ObjectId(id) }
             const result = await reviewsCollection.findOne(query)
             res.send(result)
         })
 
         // delete review by id 
-        app.delete('/reviews/:id', async(req, res)=>{
-            const id = req.params.id 
-            const query = {_id : new ObjectId(id)}
+        app.delete('/reviews/:id', async (req, res) => {
+            const id = req.params.id
+            const query = { _id: new ObjectId(id) }
             const result = await reviewsCollection.deleteOne(query)
             res.send(result)
         })
 
         // post product review 
-        app.post('/productReviews', async(req, res)=>{
-            const data = req.body 
+        app.post('/productReviews', async (req, res) => {
+            const data = req.body
             const result = await productReviewsCollection.insertOne(data)
             res.send(result)
         })
 
         // get product review 
-        app.get('/productReviews', async (req, res)=>{
+        app.get('/productReviews', async (req, res) => {
             const result = await productReviewsCollection.find().toArray()
             res.send(result)
         })
 
         // get product reviews by prodId 
-        app.get('/productReviews/:prodId', async (req, res) =>{
-            const prodId = req.params.prodId 
-            const query = {prodId : prodId}
+        app.get('/productReviews/:prodId', async (req, res) => {
+            const prodId = req.params.prodId
+            const query = { prodId: prodId }
             const result = await productReviewsCollection.find(query).toArray()
             res.send(result)
         })
 
         // delete product review 
-        app.delete('/productReviews/:id', async(req, res)=>{
-            const id = req.params.id 
-            const query = {_id : new ObjectId(id)}
+        app.delete('/productReviews/:id', async (req, res) => {
+            const id = req.params.id
+            const query = { _id: new ObjectId(id) }
             const result = await productReviewsCollection.deleteOne(query)
             res.send(result)
         })
@@ -221,7 +222,7 @@ async function run() {
         })
 
         // all products get for pagination and search 
-        app.get('/products/all', async (req, res)=>{
+        app.get('/products/all', async (req, res) => {
             const filter = req.query
             const query = {
                 productName: {
@@ -451,6 +452,122 @@ async function run() {
             const result = await ordersCollection.find({ transactionId: tranId }).toArray()
             res.send(result)
         })
+
+        // order get by id 
+        app.get('/orders/:id', async (req, res) => {
+            const id = req.params.id
+            const query = { _id: new ObjectId(id) }
+            const result = await ordersCollection.findOne(query)
+            res.send(result)
+        })
+
+        // update order status by id 
+        // app.patch('/orders/:id', async (req, res) => {
+        //     const id = req.params.id
+        //     const data = req.body
+        //     const filter = { _id: new ObjectId(id) }
+        //     const updateDoc = {
+        //         $set: {
+        //             status: data.status
+        //         }
+        //     }
+        //     const result = await ordersCollection.updateOne(filter, updateDoc)
+        //     res.send(result)
+        // })
+
+        // app.patch('/orders/:id', async (req, res) => {
+        //     const id = req.params.id;
+        //     const data = req.body;
+        //     const filter = { _id: new ObjectId(id) };
+        //     const updateDoc = {
+        //         $set: {
+        //             status: data.status
+        //         }
+        //     };
+        
+        //     // Update the order status
+        //     const updateResult = await ordersCollection.updateOne(filter, updateDoc);
+        
+        //     // If the status is "Completed," set a timer to move it to completeOrders
+        //     if (data.status === 'Completed' && updateResult.modifiedCount > 0) {
+        //         // Delay 1 minute (60,000 milliseconds)
+        //         setTimeout(async () => {
+        //             try {
+        //                 // Find the order data
+        //                 const order = await ordersCollection.findOne(filter);
+        
+        //                 // Post to completeOrders collection
+        //                 const completeOrderResult = await completeOrdersCollection.insertOne(order);
+        
+        //                 // If successfully moved, delete from the orders collection
+        //                 if (completeOrderResult.insertedId) {
+        //                     await ordersCollection.deleteOne(filter);
+        //                 }
+        //             } catch (error) {
+        //                 console.error("Error moving order to completeOrders:", error);
+        //             }
+        //         }, 5000); // 1 minute in milliseconds
+        //     }
+        
+        //     res.send(updateResult);
+        // });
+
+        app.patch('/orders/:id', async (req, res) => {
+            const id = req.params.id;
+            const data = req.body;
+            const filter = { _id: new ObjectId(id) };
+            const updateDoc = {
+                $set: {
+                    status: data.status
+                }
+            };
+        
+            // Update the order status
+            const updateResult = await ordersCollection.updateOne(filter, updateDoc);
+        
+            // If the status was successfully updated to "Completed," move to completeOrders
+            if (data.status === 'Completed' && updateResult.modifiedCount > 0) {
+                // Find the order data
+                const order = await ordersCollection.findOne(filter);
+        
+                // Post to completeOrders collection
+                const completeOrderResult = await completeOrdersCollection.insertOne(order);
+        
+                // If successfully moved, delete from the orders collection
+                if (completeOrderResult.insertedId) {
+                    await ordersCollection.deleteOne(filter);
+                }
+            }
+        
+            res.send(updateResult);
+        });
+        
+        
+        
+
+        // order data post in completeOrdersCollection 
+        app.post('/completeOrders', async (req, res) => {
+            const data = req.body
+            const result = await completeOrdersCollection.insertOne(data)
+            res.send(result)
+        })
+
+        // get all complete orders 
+        app.get('/completeOrders', async(req, res)=>{
+            const result = await completeOrdersCollection.find().toArray()
+            res.send(result)
+        })
+
+
+
+
+
+
+
+
+
+
+
 
         // Send a ping to confirm a successful connection
         // await client.db("admin").command({ ping: 1 });
