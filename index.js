@@ -484,10 +484,10 @@ async function run() {
         //             status: data.status
         //         }
         //     };
-        
+
         //     // Update the order status
         //     const updateResult = await ordersCollection.updateOne(filter, updateDoc);
-        
+
         //     // If the status is "Completed," set a timer to move it to completeOrders
         //     if (data.status === 'Completed' && updateResult.modifiedCount > 0) {
         //         // Delay 1 minute (60,000 milliseconds)
@@ -495,10 +495,10 @@ async function run() {
         //             try {
         //                 // Find the order data
         //                 const order = await ordersCollection.findOne(filter);
-        
+
         //                 // Post to completeOrders collection
         //                 const completeOrderResult = await completeOrdersCollection.insertOne(order);
-        
+
         //                 // If successfully moved, delete from the orders collection
         //                 if (completeOrderResult.insertedId) {
         //                     await ordersCollection.deleteOne(filter);
@@ -508,7 +508,7 @@ async function run() {
         //             }
         //         }, 5000); // 1 minute in milliseconds
         //     }
-        
+
         //     res.send(updateResult);
         // });
 
@@ -521,29 +521,31 @@ async function run() {
                     status: data.status
                 }
             };
-        
-            // Update the order status
-            const updateResult = await ordersCollection.updateOne(filter, updateDoc);
-        
-            // If the status was successfully updated to "Completed," move to completeOrders
-            if (data.status === 'Completed' && updateResult.modifiedCount > 0) {
-                // Find the order data
-                const order = await ordersCollection.findOne(filter);
-        
-                // Post to completeOrders collection
-                const completeOrderResult = await completeOrdersCollection.insertOne(order);
-        
-                // If successfully moved, delete from the orders collection
+ 
+            const updateResult = await ordersCollection.updateOne(filter, updateDoc); 
+             
+            if (data.status === 'Completed' && updateResult.modifiedCount > 0) { 
+                const order = await ordersCollection.findOne(filter); 
+
+                const completeOrderResult = await completeOrdersCollection.insertOne(order); 
+
                 if (completeOrderResult.insertedId) {
                     await ordersCollection.deleteOne(filter);
                 }
             }
-        
+
             res.send(updateResult);
         });
-        
-        
-        
+
+        // orders get by email 
+        app.get('/orderss/:email', async (req, res) => {
+            const email = req.params.email 
+            const query = { 'data.email': email } 
+            const result = await ordersCollection.find(query).toArray()
+            res.send(result)
+        })
+
+
 
         // order data post in completeOrdersCollection 
         app.post('/completeOrders', async (req, res) => {
@@ -553,11 +555,18 @@ async function run() {
         })
 
         // get all complete orders 
-        app.get('/completeOrders', async(req, res)=>{
+        app.get('/completeOrders', async (req, res) => {
             const result = await completeOrdersCollection.find().toArray()
             res.send(result)
         })
 
+        // complete orders get by email 
+        app.get('/completeOrders/:email', async (req, res) => {
+            const email = req.params.email 
+            const query = { 'data.email': email } 
+            const result = await completeOrdersCollection.find(query).toArray()
+            res.send(result)
+        })
 
 
 
