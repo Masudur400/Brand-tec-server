@@ -242,6 +242,17 @@ async function run() {
             res.send({ count })
         })
 
+        // get all collection count 
+        app.get('/allCount', async (req, res)=>{
+            const userCount = await usersCollection.estimatedDocumentCount()
+            const productCount = await productsCollection.estimatedDocumentCount()
+            const orderCount = await ordersCollection.estimatedDocumentCount()
+            const completeOrderCount = await completeOrdersCollection.estimatedDocumentCount()
+            const appReviewCount = await reviewsCollection.estimatedDocumentCount()
+            const productReviewCount = await productReviewsCollection.estimatedDocumentCount()
+            res.send({userCount, productCount, orderCount, completeOrderCount, appReviewCount, productReviewCount})
+        })
+
         //product get by id
         app.get('/products/:id', async (req, res) => {
             const id = req.params.id
