@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const app = express()
+const jwt = require('jsonwebtoken');
 require('dotenv').config()
 const SSLCommerzPayment = require('sslcommerz-lts')
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
@@ -23,7 +24,7 @@ const client = new MongoClient(uri, {
     }
 });
 
-// SSLCommerz secret 
+// SSL Commerz secret 
 const store_id = process.env.store_id
 const store_passwd = process.env.store_passwd
 const is_live = false //true for live, false for sandbox
@@ -46,6 +47,54 @@ async function run() {
 
 
 
+        // jwt api 
+        app.post('/jwt', async (req, res) => {
+            const user = req.body
+            const token = jwt.sign(user, process.env.AccessToken, { expiresIn: '3h' })
+            res.send({ token })
+        })
+
+        // verify token 
+        const verifyToken = (req, res, next) => {
+            if (!req.headers.authorization) {
+                return res.status(401).send({ message: 'unauthorized access !' })
+            }
+            const token = req.headers.authorization.split(' ')[1]
+            jwt.verify(token, process.env.AccessToken, (error, decoded) => {
+                if (error) {
+                    return res.status(401).send({ message: 'unauthorized access !' })
+                }
+                req.decoded = decoded
+                next()
+            })
+        }
+
+        // verify Admin and Moderator 
+        const verifyAdminAndModerator = async (req, res, next) => {
+            const email = req?.decoded?.email
+            const query = { email: email }
+            const user = await usersCollection.findOne(query)
+            const isAdminAndModerator = user?.role === 'Moderator' || user?.role === "Admin"
+            if (!isAdminAndModerator) {
+                return res.status(403).send({ message: 'forbidden access' })
+            }
+            next()
+        }
+
+
+        //verify Admin 
+        const verifyAdmin = async (req, res, next) => {
+            const email = req?.decoded?.email
+            const query = { email: email }
+            const user = await usersCollection.findOne(query)
+            const isAdmin = user?.role === 'Admin'
+            if (!isAdmin) {
+                return res.status(403).send({ message: 'forbidden access' })
+            }
+            next()
+        }
+
+
         // users post 
         app.post('/users', async (req, res) => {
             const userinfo = req.body
@@ -64,8 +113,32 @@ async function run() {
             res.send(result)
         })
 
+        // get admin user  
+        app.get('/users/admin/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = { email: email };
+            const user = await usersCollection.findOne(query);
+            let admin = false;
+            if (user) {
+                admin = user?.role === "Admin";
+            }
+            res.send({ admin })
+        })
+
+        // get moderator user 
+        app.get('/users/moderator/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = { email: email };
+            const user = await usersCollection.findOne(query);
+            let moderator = false;
+            if (user) {
+                moderator = user?.role === "Moderator";
+            }
+            res.send({ moderator })
+        })
+
         // user get by email 
-        app.get('/users/:email', async (req, res) => {
+        app.get('/users/:email', verifyToken, async (req, res) => {
             const email = req.params.email
             const query = { email: email }
             const result = await usersCollection.findOne(query)
@@ -73,7 +146,7 @@ async function run() {
         })
 
         // user get by id 
-        app.get('/users/user/:id', async (req, res) => {
+        app.get('/users/user/:id', verifyToken, async (req, res) => {
             const id = req.params.id
             const query = { _id: new ObjectId(id) }
             const result = await usersCollection.findOne(query)
@@ -81,7 +154,7 @@ async function run() {
         })
 
         // update user data by id 
-        app.patch('/users/user/:id', async (req, res) => {
+        app.patch('/users/user/:id', verifyToken, async (req, res) => {
             const id = req.params.id
             const currentUser = req.body
             const filter = { _id: new ObjectId(id) }
@@ -122,7 +195,7 @@ async function run() {
         })
 
         // delete review by id 
-        app.delete('/reviews/:id', async (req, res) => {
+        app.delete('/reviews/:id', verifyToken, verifyAdminAndModerator, async (req, res) => {
             const id = req.params.id
             const query = { _id: new ObjectId(id) }
             const result = await reviewsCollection.deleteOne(query)
@@ -151,7 +224,7 @@ async function run() {
         })
 
         // delete product review 
-        app.delete('/productReviews/:id', async (req, res) => {
+        app.delete('/productReviews/:id', verifyToken, verifyAdminAndModerator, async (req, res) => {
             const id = req.params.id
             const query = { _id: new ObjectId(id) }
             const result = await productReviewsCollection.deleteOne(query)
@@ -159,20 +232,20 @@ async function run() {
         })
 
         // post shippings Method 
-        app.post('/shippings', async (req, res) => {
+        app.post('/shippings', verifyToken, verifyAdminAndModerator, async (req, res) => {
             const data = req.body
             const result = await shippingsCollection.insertOne(data)
             res.send(result)
         })
 
         // get shipping method 
-        app.get('/shippings', async (req, res) => {
+        app.get('/shippings', verifyToken, async (req, res) => {
             const result = await shippingsCollection.find().toArray()
             res.send(result)
         })
 
         // get shippings method by id 
-        app.get('/shippings/:id', async (req, res) => {
+        app.get('/shippings/:id', verifyToken, async (req, res) => {
             const id = req.params.id
             const query = { _id: new ObjectId(id) }
             const result = await shippingsCollection.findOne(query)
@@ -180,7 +253,7 @@ async function run() {
         })
 
         // delete shippings method by id 
-        app.delete('/shippings/:id', async (req, res) => {
+        app.delete('/shippings/:id', verifyToken, verifyAdminAndModerator, async (req, res) => {
             const id = req.params.id
             const query = { _id: new ObjectId(id) }
             const result = await shippingsCollection.deleteOne(query)
@@ -188,7 +261,7 @@ async function run() {
         })
 
         // product post 
-        app.post('/products', async (req, res) => {
+        app.post('/products', verifyToken, verifyAdminAndModerator, async (req, res) => {
             const data = req.body
             const result = await productsCollection.insertOne(data)
             res.send(result)
@@ -243,14 +316,14 @@ async function run() {
         })
 
         // get all collection count 
-        app.get('/allCount', async (req, res)=>{
+        app.get('/allCount', async (req, res) => {
             const userCount = await usersCollection.estimatedDocumentCount()
             const productCount = await productsCollection.estimatedDocumentCount()
             const orderCount = await ordersCollection.estimatedDocumentCount()
             const completeOrderCount = await completeOrdersCollection.estimatedDocumentCount()
             const appReviewCount = await reviewsCollection.estimatedDocumentCount()
             const productReviewCount = await productReviewsCollection.estimatedDocumentCount()
-            res.send({userCount, productCount, orderCount, completeOrderCount, appReviewCount, productReviewCount})
+            res.send({ userCount, productCount, orderCount, completeOrderCount, appReviewCount, productReviewCount })
         })
 
         //product get by id
@@ -289,7 +362,7 @@ async function run() {
 
 
         //product delete by id
-        app.delete('/products/:id', async (req, res) => {
+        app.delete('/products/:id', verifyToken, verifyAdminAndModerator, async (req, res) => {
             const id = req.params.id
             const query = { _id: new ObjectId(id) }
             const result = await productsCollection.deleteOne(query)
@@ -297,7 +370,7 @@ async function run() {
         })
 
         // product update by id 
-        app.patch('/products/:id', async (req, res) => {
+        app.patch('/products/:id', verifyToken, verifyAdminAndModerator, async (req, res) => {
             const id = req.params.id
             const data = req.body
             const filter = { _id: new ObjectId(id) }
@@ -321,20 +394,20 @@ async function run() {
 
 
         //  post cart 
-        app.post('/carts', async (req, res) => {
+        app.post('/carts', verifyToken, async (req, res) => {
             const data = req.body
             const result = await cartsCollection.insertOne(data)
             res.send(result)
         })
 
         // get carts 
-        app.get('/carts', async (req, res) => {
+        app.get('/carts', verifyToken, async (req, res) => {
             const result = await cartsCollection.find().toArray()
             res.send(result)
         })
 
         // get carts items by email 
-        app.get('/carts/:email', async (req, res) => {
+        app.get('/carts/:email', verifyToken, async (req, res) => {
             const email = req.params.email
             const query = { email: email }
             const result = await cartsCollection.find(query).toArray()
@@ -350,7 +423,7 @@ async function run() {
         })
 
         // delete cart by id 
-        app.delete('/carts/:id', async (req, res) => {
+        app.delete('/carts/:id', verifyToken, async (req, res) => {
             const id = req.params.id
             const query = { _id: new ObjectId(id) }
             const result = await cartsCollection.deleteOne(query)
@@ -358,7 +431,7 @@ async function run() {
         })
 
         // order post 
-        app.post('/orders', async (req, res) => {
+        app.post('/orders',verifyToken, async (req, res) => {
             const body = req.body
             const products = await cartsCollection.find({ email: body?.email }).toArray()
             const price = products.map(product => product?.newPrice)
@@ -447,18 +520,16 @@ async function run() {
                     res.redirect(`http://localhost:5173/payment/fail/${tranId}`)
                 }
             })
-
-
         })
 
         // get all orders 
-        app.get('/orders', async (req, res) => {
+        app.get('/orders', verifyToken, async (req, res) => {
             const result = await ordersCollection.find().toArray()
             res.send(result)
         })
 
         // get orders by transactionId 
-        app.get('/orders/or/:tranId', async (req, res) => {
+        app.get('/orders/or/:tranId', verifyToken, async (req, res) => {
             const tranId = req.params.tranId
             const result = await ordersCollection.find({ transactionId: tranId }).toArray()
             res.send(result)
@@ -523,7 +594,7 @@ async function run() {
         //     res.send(updateResult);
         // });
 
-        app.patch('/orders/:id', async (req, res) => {
+        app.patch('/orders/:id', verifyToken, verifyAdminAndModerator, async (req, res) => {
             const id = req.params.id;
             const data = req.body;
             const filter = { _id: new ObjectId(id) };
@@ -532,13 +603,13 @@ async function run() {
                     status: data.status
                 }
             };
- 
-            const updateResult = await ordersCollection.updateOne(filter, updateDoc); 
-             
-            if (data.status === 'Completed' && updateResult.modifiedCount > 0) { 
-                const order = await ordersCollection.findOne(filter); 
 
-                const completeOrderResult = await completeOrdersCollection.insertOne(order); 
+            const updateResult = await ordersCollection.updateOne(filter, updateDoc);
+
+            if (data.status === 'Completed' && updateResult.modifiedCount > 0) {
+                const order = await ordersCollection.findOne(filter);
+
+                const completeOrderResult = await completeOrdersCollection.insertOne(order);
 
                 if (completeOrderResult.insertedId) {
                     await ordersCollection.deleteOne(filter);
@@ -549,9 +620,9 @@ async function run() {
         });
 
         // orders get by email 
-        app.get('/orderss/:email', async (req, res) => {
-            const email = req.params.email 
-            const query = { 'data.email': email } 
+        app.get('/orderss/:email', verifyToken, async (req, res) => {
+            const email = req.params.email
+            const query = { 'data.email': email }
             const result = await ordersCollection.find(query).toArray()
             res.send(result)
         })
@@ -566,15 +637,15 @@ async function run() {
         })
 
         // get all complete orders 
-        app.get('/completeOrders', async (req, res) => {
+        app.get('/completeOrders', verifyToken, async (req, res) => {
             const result = await completeOrdersCollection.find().toArray()
             res.send(result)
         })
 
         // complete orders get by email 
-        app.get('/completeOrders/:email', async (req, res) => {
-            const email = req.params.email 
-            const query = { 'data.email': email } 
+        app.get('/completeOrders/:email', verifyToken, async (req, res) => {
+            const email = req.params.email
+            const query = { 'data.email': email }
             const result = await completeOrdersCollection.find(query).toArray()
             res.send(result)
         })
