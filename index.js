@@ -138,7 +138,7 @@ async function run() {
         })
 
         // user get by email 
-        app.get('/users/:email', verifyToken, async (req, res) => {
+        app.get('/users/:email',  async (req, res) => {
             const email = req.params.email
             const query = { email: email }
             const result = await usersCollection.findOne(query)
@@ -146,7 +146,7 @@ async function run() {
         })
 
         // user get by id 
-        app.get('/users/user/:id', verifyToken, async (req, res) => {
+        app.get('/users/user/:id', async (req, res) => {
             const id = req.params.id
             const query = { _id: new ObjectId(id) }
             const result = await usersCollection.findOne(query)
@@ -407,7 +407,7 @@ async function run() {
         })
 
         // get carts items by email 
-        app.get('/carts/:email', verifyToken, async (req, res) => {
+        app.get('/carts/:email', async (req, res) => {
             const email = req.params.email
             const query = { email: email }
             const result = await cartsCollection.find(query).toArray()
@@ -541,59 +541,9 @@ async function run() {
             const query = { _id: new ObjectId(id) }
             const result = await ordersCollection.findOne(query)
             res.send(result)
-        })
+        }) 
 
-        // update order status by id 
-        // app.patch('/orders/:id', async (req, res) => {
-        //     const id = req.params.id
-        //     const data = req.body
-        //     const filter = { _id: new ObjectId(id) }
-        //     const updateDoc = {
-        //         $set: {
-        //             status: data.status
-        //         }
-        //     }
-        //     const result = await ordersCollection.updateOne(filter, updateDoc)
-        //     res.send(result)
-        // })
-
-        // app.patch('/orders/:id', async (req, res) => {
-        //     const id = req.params.id;
-        //     const data = req.body;
-        //     const filter = { _id: new ObjectId(id) };
-        //     const updateDoc = {
-        //         $set: {
-        //             status: data.status
-        //         }
-        //     };
-
-        //     // Update the order status
-        //     const updateResult = await ordersCollection.updateOne(filter, updateDoc);
-
-        //     // If the status is "Completed," set a timer to move it to completeOrders
-        //     if (data.status === 'Completed' && updateResult.modifiedCount > 0) {
-        //         // Delay 1 minute (60,000 milliseconds)
-        //         setTimeout(async () => {
-        //             try {
-        //                 // Find the order data
-        //                 const order = await ordersCollection.findOne(filter);
-
-        //                 // Post to completeOrders collection
-        //                 const completeOrderResult = await completeOrdersCollection.insertOne(order);
-
-        //                 // If successfully moved, delete from the orders collection
-        //                 if (completeOrderResult.insertedId) {
-        //                     await ordersCollection.deleteOne(filter);
-        //                 }
-        //             } catch (error) {
-        //                 console.error("Error moving order to completeOrders:", error);
-        //             }
-        //         }, 5000); // 1 minute in milliseconds
-        //     }
-
-        //     res.send(updateResult);
-        // });
-
+        // order status update 
         app.patch('/orders/:id', verifyToken, verifyAdminAndModerator, async (req, res) => {
             const id = req.params.id;
             const data = req.body;
