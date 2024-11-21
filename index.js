@@ -443,8 +443,8 @@ async function run() {
                 total_amount: amount,
                 currency: body?.currency,
                 tran_id: tranId,
-                success_url: `http://localhost:5000/payment/success/${tranId}`,
-                fail_url: `http://localhost:5000/payment/fail/${tranId}`,
+                success_url: `https://brand-tec-server.vercel.app/payment/success/${tranId}`,
+                fail_url: `https://brand-tec-server.vercel.app/payment/fail/${tranId}`,
                 cancel_url: 'http://localhost:3030/cancel',
                 ipn_url: 'http://localhost:3030/ipn',
                 shipping_method: 'Courier',
@@ -508,7 +508,7 @@ async function run() {
                         };
                         await cartsCollection.deleteMany(query);
                     }
-                    res.redirect(`http://localhost:5173/payment/success/${tranId}`)
+                    res.redirect(`https://brand-tec.web.app/payment/success/${tranId}`)
                 }
             })
 
@@ -517,7 +517,7 @@ async function run() {
                 const tranId = req.params.tranId
                 const result = await ordersCollection.deleteOne({ transactionId: tranId })
                 if (result.deletedCount) {
-                    res.redirect(`http://localhost:5173/payment/fail/${tranId}`)
+                    res.redirect(`https://brand-tec.web.app/payment/fail/${tranId}`)
                 }
             })
         })
